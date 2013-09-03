@@ -1,5 +1,4 @@
 create or replace 
-
 PROCEDURE INS_ECO01_2_APECO01 
 (       in_TRANSID            IN  VARCHAR2,
         out_ERR_CODE          OUT VARCHAR2,      
@@ -176,6 +175,7 @@ BEGIN
                                             ,S_DB_REC_T2.QTY
                                             ,S_DB_REC_T2.QTY_UNIT
                                           );
+              COMMIT;                            
                                            
            EXCEPTION
               WHEN   OTHERS  THEN
@@ -222,13 +222,18 @@ BEGIN
                                      ,CERTIFYING_PLACE
                                      ,CERTIFYING_DATE
                                      ,CERTIFYING_TIME
- 
+                                     ,DEAL_DATE
+                                     ,XML_EDI_FLAG
+                                     ,RECEIVER_NAME
+                                     ,APFI_DATE
+                                     ,APFI_TIME
+                                     
                                    )
                            VALUES  (  S_DB_REC_T1.TRANS_ID
-                                     ,S_DB_REC_T1.VAN_ID
-                                     ,S_DB_REC_T1.SENDER_ID
+                                     ,'1'
+                                     ,'TVRTV'
                                      ,'X'
-                                     ,S_DB_REC_T1.CONTROL_NUMBER
+                                     ,'X'
                                      ,S_DB_REC_T1.MSG_FUNC_CD
                                      ,S_DB_REC_T1.DECL_NO
                                      ,S_DB_REC_T1.CUSTOMS_MESSAGE_ID
@@ -251,10 +256,14 @@ BEGIN
                                      ,S_DB_REC_T1.CERTI_PLACE
                                      ,to_char(S_DB_REC_T1.CERTI_DATE,'yyyymmdd')
                                      ,to_char(S_DB_REC_T1.CERTI_DATE,'hh24mi')
-                                     
+                                     ,'********'
+                                     ,'XML'
+                                     ,'CTRXML'
+                                     ,to_char(SYSDATE,'yyyymmdd')
+                                     ,to_char(SYSDATE,'hh24mi') || '00'
                                    );
                 
-        
+        COMMIT;
         -- 問題： 
         -- 1. APFI_DATE, APFI_TIME是不是由海關的AP來更新？
         -- 2. 
