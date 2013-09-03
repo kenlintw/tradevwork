@@ -1,5 +1,9 @@
-create or replace 
+te or replace 
 PROCEDURE INS_APECO02_2_ECO02  IS
+
+-- Copy eco02 message from DGOC_AP_ECO02A1 to DSW_ECO02_S1
+-- 
+-- 
 
 BEGIN
    DECLARE
@@ -8,12 +12,12 @@ BEGIN
      V_END_VALUE    	              VARCHAR2(50) ;
     
      V_S_TABLE_T1		                VARCHAR2(70) := 'DGOC_AP_ECO02A0' ;
-     V_S_TABLE_T2		                VARCHAR2(70) := 'DGOC_AP_X801B0' ;
-     V_S_TABLE_T3		                VARCHAR2(70) := 'DGOC_AP_X801A1' ;
+     --V_S_TABLE_T2		                VARCHAR2(70) := 'DGOC_AP_X801B0' ;
+     --V_S_TABLE_T3		                VARCHAR2(70) := 'DGOC_AP_X801A1' ;
 
      V_T_TABLE_T1		                VARCHAR2(70) := 'DSW_ECO02_S1' ;
-     V_T_TABLE_T2	 	                VARCHAR2(70) := 'DSW_NX801_S2' ;
-     V_T_TABLE_T3	 	                VARCHAR2(70) := 'DSW_NX801_CNTANR' ;
+     --V_T_TABLE_T2	 	                VARCHAR2(70) := 'DSW_NX801_S2' ;
+     --V_T_TABLE_T3	 	                VARCHAR2(70) := 'DSW_NX801_CNTANR' ;
 
      S_DB_REC_T1                    DGOC_AP_ECO02A0%ROWTYPE;
      T_DB_REC_T1                    DSW_ECO02_S1%ROWTYPE;
