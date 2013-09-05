@@ -1,25 +1,25 @@
 create or replace 
-PROCEDURE INS_ECO01_2_APECO01 
-(       in_TRANSID            IN  VARCHAR2,
-        out_ERR_CODE          OUT VARCHAR2,      
-        out_ERR_MSG           OUT VARCHAR2       
-) 
+PROCEDURE INS_ECO01_2_APECO01
+(       in_TRANSID            IN  VARCHAR2
+        --out_ERR_CODE          OUT VARCHAR2,
+        --out_ERR_MSG           OUT VARCHAR2
+)
 IS
 BEGIN
  DECLARE
    V_PG_ID               VARCHAR2(70) := 'INS_ECO01_2_APECO01.prc';
    V_STR_VALUE           VARCHAR2(50) ;
    V_END_VALUE           VARCHAR2(50) ;
-  
+
    --單一窗口的二個Tables
    V_S_TABLE_T1          VARCHAR2(70) := 'DSW_ECO01_S1' ;
    V_S_TABLE_T2          VARCHAR2(70) := 'DSW_ECO01_S2' ;
- 
+
    -- 海關的二個Tables
    V_T_TABLE_T1          VARCHAR2(70) := 'DGOC_AP_ECO01A0' ;
    V_T_TABLE_T2          VARCHAR2(70) := 'DGOC_AP_ECO01B0' ;
-  
-   -- 以下至TEST_VAR1為程式邏輯使用的變數 
+
+   -- 以下至TEST_VAR1為程式邏輯使用的變數
    S_DB_REC_T1           DSW_ECO01_S1%ROWTYPE;
    S_DB_REC_T2           DSW_ECO01_S2%ROWTYPE;
 
@@ -69,15 +69,15 @@ BEGIN
    V_ITEM_NO             DSW_ECO01_S2.ITEM_NO%TYPE;
    V_ERROR_CODE          VARCHAR2(198);
    V_COMMIT_FLG          VARCHAR2(1) := '0' ;
-   
+
    TEST_VAR1             DATE;
-    
-   
+
+
    -- 取主表資料DSW_ECO01_S1
    CURSOR  SEL_DATA_T1 IS
            SELECT  *
              FROM  DSW_ECO01_S1
- 	           WHERE 
+ 	           WHERE
               TRANS_ID  =  in_TRANSID
               ORDER  BY TRANS_ID;
 
@@ -109,17 +109,22 @@ BEGIN
         COMMIT;
      END;
  BEGIN
- 
+
    V_TRAN_ID      := TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS');
    V_C01          := V_TRAN_ID;
    V_S_DB_CNT_T1  := 0;
-   out_ERR_CODE := '﹣1';                
-   out_ERR_MSG  := 'INITIALIZNG...';       
+   --out_ERR_CODE := '﹣1';
+   --out_ERR_MSG  := 'INITIALIZNG...';
+   
+   S_DB_REC_T1 := NULL;
+   T_DB_REC_T1 := NULL;
+   S_DB_REC_T2 := NULL;
+   T_DB_REC_T2 := NULL;
+   
+   
 
    OPEN  SEL_DATA_T1;
    LOOP
-        S_DB_REC_T1 := NULL;
-        T_DB_REC_T1 := NULL;
         FETCH  SEL_DATA_T1
             INTO  S_DB_REC_T1;
         EXIT  WHEN SEL_DATA_T1%NOTFOUND;
@@ -137,14 +142,15 @@ BEGIN
         V_S_DB_CNT_T2 := 0;
         OPEN  SEL_DATA_T2;
         LOOP
-          S_DB_REC_T2 := NULL;
-          T_DB_REC_T2 := NULL;
+ 
           FETCH  SEL_DATA_T2
                  INTO  S_DB_REC_T2;
           EXIT  WHEN SEL_DATA_T2%NOTFOUND;
 
- 
+
           BEGIN
+          
+  
              INSERT INTO DGOC_AP_ECO01B0 (  TRANSACTION_ID
                                            ,SEQ_NO
                                            ,ITEM_ID
@@ -175,14 +181,44 @@ BEGIN
                                             ,S_DB_REC_T2.QTY
                                             ,S_DB_REC_T2.QTY_UNIT
                                           );
-              COMMIT;                            
-                                           
+
+
+              V_C01 := 'ECO01';
+              V_C02 := TO_CHAR(SYSDATE, 'YYYY/MM/DD HH24:MI:SS');
+              V_C03 := 'AFTER INSERTING DGOC_AP_ECO01B0';
+              V_C04 := 'S_DB_REC_T2.TRANS_ID' ;
+              V_C05 := 'S_DB_REC_T1.CUSTOMS_MESSAGE_ID';
+              
+              INSERT  INTO  SYS_ERR_01  (   TNAME
+                                           ,C01
+                                           ,C02
+                                           ,C03
+                                           ,C04
+ 
+                                  )
+                         VALUES   (   'ECO01'
+                                     ,TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS')
+                                     ,'AFTER INSERTING DGOC_AP_ECO01B0'
+                                     ,S_DB_REC_T2.TRANS_ID
+                                     ,S_DB_REC_T1.CUSTOMS_MESSAGE_ID
+                                  );   
+              
+              
+              --COMMIT;
+
            EXCEPTION
               WHEN   OTHERS  THEN
-                   ERR_CODE   :=  SUBSTR(SQLERRM,1,120);
-                   DBMS_output.put_line('ERROR : ' || ERR_CODE);
-                   V_COMMIT_FLG := '1';
-           END;   
+                ERR_CODE   :=  SUBSTR(SQLERRM,1,120);
+                --DBMS_output.put_line('ERROR : ' || ERR_CODE);
+                 V_PG_ID := 'ECO01';
+                 V_C01 := TO_CHAR(SYSDATE, 'YYYY/MM/DD HH24:MI:SS');
+                 V_C02 := 'HAS ERROR WHILE INSERTING DGOC_AP_ECO01B0';
+                 V_C03 := ERR_CODE;
+                 
+                 DO_INFO ;                     
+        
+                 V_COMMIT_FLG := '1';
+           END;
       END LOOP;
       CLOSE SEL_DATA_T2;
       /**** T2 End ****/
@@ -225,9 +261,9 @@ BEGIN
                                      ,DEAL_DATE
                                      ,XML_EDI_FLAG
                                      ,RECEIVER_NAME
-                                     ,APFI_DATE
-                                     ,APFI_TIME
-                                     
+                                     --,APFI_DATE
+                                     --,APFI_TIME
+
                                    )
                            VALUES  (  S_DB_REC_T1.TRANS_ID
                                      ,'1'
@@ -238,9 +274,11 @@ BEGIN
                                      ,S_DB_REC_T1.DECL_NO
                                      ,S_DB_REC_T1.CUSTOMS_MESSAGE_ID
                                      ,S_DB_REC_T1.PORT_CD
-                                     ,S_DB_REC_T1.SAL_ENAME
-                                     ,S_DB_REC_T1.SAL_EADDR
-                                     ,S_DB_REC_T1.DUTY_PAYER_ENAME
+                                     --,S_DB_REC_T1.SAL_ENAME
+                                     ---,S_DB_REC_T1.SAL_EADDR
+                                     ,SUBSTR(S_DB_REC_T1.SAL_ENAME,1,25)
+                                     ,SUBSTR(S_DB_REC_T1.SAL_EADDR,1,25)
+                                      ,S_DB_REC_T1.DUTY_PAYER_ENAME
                                      ,S_DB_REC_T1.DUTY_PAYER_BAN
                                      ,S_DB_REC_T1.DUTY_PAYER_EADDR
                                      ,S_DB_REC_T1.UNLOAD_PORT
@@ -259,44 +297,93 @@ BEGIN
                                      ,'********'
                                      ,'XML'
                                      ,'CTRXML'
-                                     ,to_char(SYSDATE,'yyyymmdd')
-                                     ,to_char(SYSDATE,'hh24mi') || '00'
+                                     --,to_char(SYSDATE,'yyyymmdd')
+                                     --,to_char(SYSDATE,'hh24mi') || '00'
                                    );
-                
-        COMMIT;
-        -- 問題： 
+
+       INSERT  INTO  SYS_ERR_01  (   TNAME
+                                     ,C01
+                                     ,C02
+                                     ,C03
+                                     ,C04
+  
+                                  )
+                         VALUES   (   'ECO01'
+                                     ,TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS')
+                                     ,'AFTER INSERT DGOC_AP_ECO01A0'
+                                     ,S_DB_REC_T1.TRANS_ID
+                                     ,S_DB_REC_T1.CUSTOMS_MESSAGE_ID
+                                     
+                                  );
+
+        
+        /*  
+        INSERT INTO DSW_ECO02_S1(
+                                    TRANS_ID,
+                                    SENDER_ID,
+                                    RECEIVER_ID,
+
+                                    CONTROL_NUMBER,
+                                    VAN_ID,
+                                    DLVR_DATE,
+                                    DEAL_DATE,
+
+                                    CERT_NO,
+
+                                    CUSTOMS_MESSAGE_ID
+                                )
+                        VALUES
+                                (
+                                    S_DB_REC_T1.TRANS_ID,
+                                    S_DB_REC_T1.SENDER_ID,
+                                    S_DB_REC_T1.RECEIVER_ID,
+
+                                    S_DB_REC_T1.CONTROL_NUMBER,
+                                    S_DB_REC_T1.VAN_ID,
+                                    S_DB_REC_T1.DLVR_DATE,
+                                    TO_DATE('00010101','yyyymmdd'),
+                                    S_DB_REC_T1.CERT_NO,
+
+                                    S_DB_REC_T1.CUSTOMS_MESSAGE_ID
+                                );
+        */  
+
+        --COMMIT;
+        -- 問題：
         -- 1. APFI_DATE, APFI_TIME是不是由海關的AP來更新？
-        -- 2. 
+        -- 2.
         -- 3. DSW_ECO01_S1.EX_ISSUE_TIME 我本來要放to_char(to_date('00010101 0000','yyyymmdd hh24mi'),'hh24mi')
         -- DGOC_AP_ECO01A0.SHIPMENT = DSW_ECO01_S1.PORT_CD
-        -- 
- 
+        --
+
       EXCEPTION
          WHEN  OTHERS  THEN
               ERR_CODE   :=  SUBSTR(SQLERRM,1,120);
               DBMS_output.put_line('ERROR HAPPENED IN T1 PROCESSING. : ' || ERR_CODE);
-              
+
               V_COMMIT_FLG := '1';
+              rollback;
       END;
 
- 
+
       IF ( V_COMMIT_FLG = '0' ) THEN
         UPDATE  DSW_ECO01_S1
            SET  DEAL_DATE  =  SYSDATE
          WHERE  TRANS_ID   =  in_TRANSID;
-         out_ERR_CODE := '0';                
-         out_ERR_MSG  := 'SUCCESSFUL';              
+         --out_ERR_CODE := '0';
+         --out_ERR_MSG  := 'SUCCESSFUL';
+         --COMMIT;
       ELSE
-         out_ERR_CODE := '1';                
-         out_ERR_MSG  := 'FAILED';                     
-	      ROLLBACK;
+         --out_ERR_CODE := '1';
+         --out_ERR_MSG  := 'FAILED';
+         ROLLBACK;
       END IF;
       /**** T1 End ****/
 
       M_CNT  :=  M_CNT + 1 ;
       IF  M_CNT  >= V_COMMIT_CNT  THEN
              T_CNT       :=  T_CNT + M_CNT ;
-          COMMIT;
+          --COMMIT;
           M_CNT := 0;
        END  IF;
 
@@ -305,7 +392,7 @@ BEGIN
    T_CNT  :=  T_CNT + M_CNT ;
 
   CLOSE SEL_DATA_T1;
-  COMMIT;
+  --COMMIT;
 
   END;
 END;
