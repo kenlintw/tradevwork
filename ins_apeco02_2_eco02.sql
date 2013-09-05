@@ -1,4 +1,4 @@
-te or replace 
+create or replace 
 PROCEDURE INS_APECO02_2_ECO02  IS
 
 -- Copy eco02 message from DGOC_AP_ECO02A1 to DSW_ECO02_S1
@@ -70,6 +70,7 @@ BEGIN
      CURSOR  SEL_DATA_T1       IS
              SELECT  *
                FROM   DGOC_AP_ECO02A0
+               WHERE  APFO_DATE = '********'
             ORDER by TRANSACTION_ID;
 
      --  讀取海關資料庫資料
@@ -102,9 +103,7 @@ BEGIN
      END;
 
 BEGIN
-   DELETE SYS_ERR_01 WHERE TNAME  = V_PG_ID;
-   COMMIT;
-
+   
     SELECT  TO_CHAR(SYSDATE, 'YYYY/MM/DD HH24:MI:SS')
            ,TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS')
       INTO  V_STR_TIME
@@ -115,7 +114,7 @@ BEGIN
     SELECT  COUNT(*)
       INTO  V_S_DB_CNT_T1
       FROM  DGOC_AP_ECO02A0
-     WHERE  APFO_DATE     =  '66666666';
+     WHERE  APFO_DATE     =  '********';
 
     V_C01 := 'GET DGOC_AP_ECO02A0 TEST DATA';
     V_C02 := TO_CHAR(SYSDATE, 'YYYY/MM/DD HH24:MI:SS');
@@ -151,19 +150,20 @@ BEGIN
   
   	      BEGIN       
               INSERT INTO DSW_ECO02_S1 (   
-                                      TRANS_ID          
+                                       TRANS_ID          
                                       ,SENDER_ID         
                                       ,RECEIVER_ID       
   
                                       ,CONTROL_NUMBER    
                                       ,VAN_ID            
-                                      ,DLVR_DATE         
-                                      ,DEAL_DATE         
+                                      --,DLVR_DATE         
+                                      --,DEAL_DATE         
                                               
                                       ,CERT_NO           
                                       ,STATUS            
                                       ,STATUS_DESC       
                                       ,CUSTOMS_MESSAGE_ID
+                                      
                                    )
                       VALUES       (                                           
                                       S_DB_REC_T1.TRANSACTION_ID           
@@ -172,8 +172,8 @@ BEGIN
           
                                       ,S_DB_REC_T1.CONTROL_NO    
                                       ,S_DB_REC_T1.VAN_ID             
-                                      ,to_date(S_DB_REC_T1.APFO_DATE || ' ' || substr(S_DB_REC_T1.APFO_TIME,1,6), 'yyyymmdd hh24miss')          
-                                      ,to_date(S_DB_REC_T1.DEAL_DATE || ' ' || substr(S_DB_REC_T1.DEAL_TIME,1,6), 'yyyymmdd hh24miss')
+                                      --,to_date(S_DB_REC_T1.APFO_DATE || ' ' || substr(S_DB_REC_T1.APFO_TIME,1,6), 'yyyymmdd hh24miss')          
+                                      --,to_date(S_DB_REC_T1.DEAL_DATE || ' ' || substr(S_DB_REC_T1.DEAL_TIME,1,6), 'yyyymmdd hh24miss')
                                                  
                                       ,S_DB_REC_T1.CERTIFICATE_NO           
                                       ,S_DB_REC_T1.STATUS_CODE             
@@ -181,23 +181,7 @@ BEGIN
                                       ,S_DB_REC_T1.CUSTOMS_MESSAGE_ID 
                                    );
           
-			       V_COMMIT_FLG := '0';
-             
-          EXCEPTION
-             WHEN   OTHERS  THEN
-                    INSERT_ERR := 1;
-                    ERR_CODE   :=  SUBSTR(SQLERRM,1,120);
-                    DBMS_output.put_line('ERROR : ' || ERR_CODE);
-                    DO_INFO ;
-
-		         V_COMMIT_FLG := '1';
-		         ROLLBACK;
-          END;
-          V_S_DB_CNT_T1 := V_S_DB_CNT_T1 + 1;
-
-          BEGIN
-            -- Event to
-     	      INSERT INTO ACI_CSZOBCL  (  TRANS_ID
+             INSERT INTO ACI_CSZOBBL  (  TRANS_ID
      		                               ,MSG_TYPE
      		                               ,SENDER_ID
      		                               ,RECEIVER_ID
@@ -215,27 +199,33 @@ BEGIN
      		                               ,SYSDATE
      		                               ,TO_DATE('00010101','yyyymmdd')
      	                                );
-                    V_COMMIT_FLG := '0';
-           
+            V_COMMIT_FLG := '0';
+            DBMS_output.put_line('寫一筆EVENT入 ACI_CSZOBBL/' || 'WRITE_DATE=' || SYSDATE || 'DEAL_DATE=' || TO_DATE('00010101','yyyymmdd'));
+            COMMIT;
+             
           EXCEPTION
              WHEN   OTHERS  THEN
+                    INSERT_ERR := 1;
                     ERR_CODE   :=  SUBSTR(SQLERRM,1,120);
                     DBMS_output.put_line('ERROR : ' || ERR_CODE);
                     DO_INFO ;
-                    V_COMMIT_FLG := '1';
-                    ROLLBACK; 
-                    
+
+		         V_COMMIT_FLG := '1';
+		         ROLLBACK;
           END;
-          --  Insert event END
+          V_S_DB_CNT_T1 := V_S_DB_CNT_T1 + 1;
+
 
          -- 讀取資料須將 DGOC_AP_ECO02A0 資料 UPDATE
-         /*
+         
          BEGIN
-           --UPDATE  DGOC_AP_ECO02A0
-           --   SET  APFO_DATE       =  TO_CHAR(SYSDATE,'YYYYMMDD')
-           --       ,APFO_TIME       =  TO_CHAR(SYSDATE,'HH24MISS')
-           -- WHERE  TRANSACTION_ID  =  V_TRANSACTION_ID
-           --   AND  APFO_DATE       =  '66666666';
+           UPDATE  DGOC_AP_ECO02A0
+              SET  APFO_DATE       =  TO_CHAR(SYSDATE,'YYYYMMDD')
+                  ,APFO_TIME       =  TO_CHAR(SYSDATE,'HH24MISS')
+                  
+            WHERE  TRANSACTION_ID  =  S_DB_REC_T1.TRANSACTION_ID
+              AND  APFO_DATE       =  '********';
+            COMMIT;          
          EXCEPTION
             WHEN  OTHERS  THEN
                   ERR_CODE   :=  SUBSTR(SQLERRM,1,120);
@@ -246,7 +236,7 @@ BEGIN
                   V_C05      := 'PROC TABLE : UPDATE DGOC_AP_ECO02A0';
                   DO_INFO ;
          END;
-         */
+         
          
     END LOOP;
     T_CNT  :=  T_CNT + M_CNT ;
